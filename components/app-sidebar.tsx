@@ -1,6 +1,6 @@
 "use client"
 
-import { Home, Users, FileText, LogOut } from "lucide-react"
+import { Home, Users, FileText, LogOut, KeyRound } from "lucide-react"
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
 
@@ -32,6 +32,11 @@ const menuItems = [
     title: "Auditoría",
     url: "/dashboard/auditoria",
     icon: FileText,
+  },
+  {
+    title: "Cambiar Contraseña",
+    url: "/dashboard/cambiar-contrasena",
+    icon: KeyRound,
   },
 ]
 
