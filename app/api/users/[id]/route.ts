@@ -17,7 +17,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     // Check if DNI is being changed and if it already exists
     if (dni !== currentUser.dni) {
-      const { data: existingUser } = await supabase.from("users").select("id").eq("dni", dni).single()
+      const { data: existingUser } = await supabase.from("users").select("id").eq("dni", dni).maybeSingle()
 
       if (existingUser) {
         return NextResponse.json({ error: "El DNI ya está registrado" }, { status: 400 })
