@@ -10,3 +10,4 @@ hashed = bcrypt.hashpw(password.encode('utf-8'), salt)
 
 print(f"Password: {password}")
 print(f"Hash: {hashed.decode('utf-8')}")
+print("\nCopy this hash to scripts/002_seed_admin.sql")

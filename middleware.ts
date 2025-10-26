@@ -1,15 +1,10 @@
-import { updateSession } from "@/lib/supabase/middleware"
 import { type NextRequest, NextResponse } from "next/server"
 
 export async function middleware(request: NextRequest) {
-  // Update session
-  const response = await updateSession(request)
+  const userId = request.cookies.get("mancrol_user_id")?.value
 
-  // Check if user is authenticated for protected routes
   if (request.nextUrl.pathname.startsWith("/dashboard")) {
-    const supabase = response.headers.get("x-supabase-user")
-
-    if (!supabase) {
+    if (!userId) {
       const url = request.nextUrl.clone()
       url.pathname = "/login"
       return NextResponse.redirect(url)
@@ -18,16 +13,14 @@ export async function middleware(request: NextRequest) {
 
   // Redirect to dashboard if already logged in and trying to access login
   if (request.nextUrl.pathname === "/login") {
-    const supabase = response.headers.get("x-supabase-user")
-
-    if (supabase) {
+    if (userId) {
       const url = request.nextUrl.clone()
       url.pathname = "/dashboard"
       return NextResponse.redirect(url)
     }
   }
 
-  return response
+  return NextResponse.next()
 }
 
 export const config = {

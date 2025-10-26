@@ -1,6 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import bcrypt from "bcryptjs"
 
 export async function POST(request: NextRequest) {
   try {
@@ -12,14 +11,6 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient()
 
-    // Check if user is authenticated
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser()
-    if (!authUser) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
-
     // Check if DNI already exists
     const { data: existingUser } = await supabase.from("users").select("id").eq("dni", dni).single()
 
@@ -27,17 +18,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "El DNI ya está registrado" }, { status: 400 })
     }
 
-    // Hash password
-    const password_hash = await bcrypt.hash(password, 10)
-
     // Create user
     const { data: newUser, error: createError } = await supabase
       .from("users")
       .insert({
         dni,
         full_name,
-        password_hash,
-        created_by: authUser.user_metadata?.user_id,
+        password_hash: password, // Texto plano
       })
       .select()
       .single()
@@ -56,7 +43,7 @@ export async function POST(request: NextRequest) {
 
     // Log audit
     await supabase.from("audit_logs").insert({
-      user_id: authUser.user_metadata?.user_id,
+      user_id: newUser.id,
       action: "create_user",
       entity_type: "user",
       entity_id: newUser.id,
@@ -65,7 +52,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, user: newUser })
   } catch (error) {
-    console.error("[v0] Create user error:", error)
+    console.error("Create user error:", error)
     return NextResponse.json({ error: "Error al crear usuario" }, { status: 500 })
   }
 }

@@ -1,16 +1,17 @@
 import { createClient } from "@/lib/supabase/server"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Users, FileText, Shield } from "lucide-react"
+import { getCurrentUser } from "@/lib/auth"
+import { redirect } from "next/navigation"
 
 export default async function DashboardPage() {
+  const user = await getCurrentUser()
+
+  if (!user) {
+    redirect("/login")
+  }
+
   const supabase = await createClient()
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-
-  // Get user data from our custom users table
-  const { data: userData } = await supabase.from("users").select("*").eq("id", user?.user_metadata?.user_id).single()
 
   // Get statistics
   const { count: usersCount } = await supabase.from("users").select("*", { count: "exact", head: true })
@@ -20,7 +21,7 @@ export default async function DashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-mancrol-text">Bienvenido, {userData?.full_name || "Usuario"}</h1>
+        <h1 className="text-3xl font-bold text-mancrol-text">Bienvenido, {user.full_name}</h1>
         <p className="text-muted-foreground">Sistema de Administración Mancrol</p>
       </div>
 

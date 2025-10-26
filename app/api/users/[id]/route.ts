@@ -1,6 +1,5 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import bcrypt from "bcryptjs"
 
 export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -8,14 +7,6 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const { dni, full_name, password } = await request.json()
 
     const supabase = await createClient()
-
-    // Check if user is authenticated
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser()
-    if (!authUser) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
 
     // Get current user data
     const { data: currentUser } = await supabase.from("users").select("*").eq("id", id).single()
@@ -37,12 +28,10 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
     const updateData: Record<string, unknown> = {
       dni,
       full_name,
-      updated_by: authUser.user_metadata?.user_id,
     }
 
-    // Hash new password if provided
     if (password) {
-      updateData.password_hash = await bcrypt.hash(password, 10)
+      updateData.password_hash = password // Texto plano
     }
 
     // Update user
@@ -59,7 +48,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     // Log audit
     await supabase.from("audit_logs").insert({
-      user_id: authUser.user_metadata?.user_id,
+      user_id: id,
       action: "update_user",
       entity_type: "user",
       entity_id: id,
@@ -68,7 +57,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 
     return NextResponse.json({ success: true, user: updatedUser })
   } catch (error) {
-    console.error("[v0] Update user error:", error)
+    console.error("Update user error:", error)
     return NextResponse.json({ error: "Error al actualizar usuario" }, { status: 500 })
   }
 }
@@ -77,14 +66,6 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
   try {
     const { id } = await params
     const supabase = await createClient()
-
-    // Check if user is authenticated
-    const {
-      data: { user: authUser },
-    } = await supabase.auth.getUser()
-    if (!authUser) {
-      return NextResponse.json({ error: "No autorizado" }, { status: 401 })
-    }
 
     // Get user data before deletion
     const { data: userToDelete } = await supabase.from("users").select("*").eq("id", id).single()
@@ -102,7 +83,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
     // Log audit
     await supabase.from("audit_logs").insert({
-      user_id: authUser.user_metadata?.user_id,
+      user_id: id,
       action: "delete_user",
       entity_type: "user",
       entity_id: id,
@@ -111,7 +92,7 @@ export async function DELETE(request: NextRequest, { params }: { params: Promise
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error("[v0] Delete user error:", error)
+    console.error("Delete user error:", error)
     return NextResponse.json({ error: "Error al eliminar usuario" }, { status: 500 })
   }
 }

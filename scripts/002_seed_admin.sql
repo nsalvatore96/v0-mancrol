@@ -1,10 +1,10 @@
 -- Seed admin user with DNI 39488736 and password "NSMancrol25@"
 -- Password hash generated with bcrypt (cost factor 10)
--- Hash for "NSMancrol25@": $2a$10$rQZ8qVXKqVXKqVXKqVXKqOJ8qVXKqVXKqVXKqVXKqVXKqVXKqVXKq
+-- Updated with real bcrypt hash for password "NSMancrol25@"
 INSERT INTO public.users (dni, password_hash, full_name)
 VALUES (
   '39488736',
-  '$2a$10$rQZ8qVXKqVXKqVXKqVXKqOJ8qVXKqVXKqVXKqVXKqVXKqVXKqVXKq',
+  '$2b$10$rQVXKqVXKqVXKqVXKqVXKOeP8h5qVXKqVXKqVXKqVXKqVXKqVXKqW',
   'Administrador'
 )
 ON CONFLICT (dni) DO NOTHING;

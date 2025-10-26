@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server"
 import bcrypt from "bcryptjs"
+import { cookies } from "next/headers"
 
 export interface User {
   id: string
@@ -37,25 +38,29 @@ export async function loginWithDNI(dni: string, password: string) {
 
   // Create a session by signing in with a custom token
   // Since we're using custom auth, we'll store the user ID in a cookie
+  const cookieStore = cookies()
+  cookieStore.set("mancrol_user_id", user.id, { httpOnly: true, path: "/" })
+
   return { success: true, user }
 }
 
 export async function getCurrentUser(): Promise<User | null> {
-  const supabase = await createClient()
+  try {
+    const cookieStore = await cookies()
+    const userId = cookieStore.get("mancrol_user_id")?.value
 
-  // For now, we'll use a simple approach with cookies
-  // In production, you might want to use JWT tokens
-  const {
-    data: { user: authUser },
-  } = await supabase.auth.getUser()
+    if (!userId) {
+      return null
+    }
 
-  if (!authUser) {
+    const supabase = await createClient()
+    const { data: user } = await supabase.from("users").select("*").eq("id", userId).single()
+
+    return user
+  } catch (error) {
+    console.error("[v0] Error getting current user:", error)
     return null
   }
-
-  const { data: user } = await supabase.from("users").select("*").eq("id", authUser.id).single()
-
-  return user
 }
 
 export async function getUserPermissions(userId: string): Promise<Permission[]> {

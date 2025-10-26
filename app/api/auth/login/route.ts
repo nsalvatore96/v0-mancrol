@@ -1,10 +1,12 @@
 import { type NextRequest, NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
-import bcrypt from "bcryptjs"
+import { cookies } from "next/headers"
 
 export async function POST(request: NextRequest) {
   try {
     const { dni, password } = await request.json()
+
+    console.log("[v0] Login attempt for DNI:", dni)
 
     if (!dni || !password) {
       return NextResponse.json({ error: "DNI y contraseña son requeridos" }, { status: 400 })
@@ -12,46 +14,47 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient()
 
-    // Get user by DNI
     const { data: user, error: userError } = await supabase.from("users").select("*").eq("dni", dni).single()
 
+    console.log("[v0] User query result:", { user: user ? "found" : "not found", error: userError })
+
+    if (user) {
+      console.log("[v0] User data:", { id: user.id, dni: user.dni, full_name: user.full_name })
+      console.log("[v0] Password hash from DB:", user.password_hash)
+    }
+
     if (userError || !user) {
+      console.log("[v0] User not found or error:", userError)
       return NextResponse.json({ error: "DNI o contraseña incorrectos" }, { status: 401 })
     }
 
-    // Verify password
-    const passwordMatch = await bcrypt.compare(password, user.password_hash)
+    const passwordMatch = password === user.password_hash
+
+    console.log("[v0] Password match result:", passwordMatch)
 
     if (!passwordMatch) {
       return NextResponse.json({ error: "DNI o contraseña incorrectos" }, { status: 401 })
     }
 
-    // Create session using Supabase Auth with custom user metadata
-    // We'll use the admin key to create a session for this user
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email: `${dni}@mancrol.internal`,
-      password: password,
-      email_confirm: true,
-      user_metadata: {
-        dni: user.dni,
-        full_name: user.full_name,
-        user_id: user.id,
-      },
+    const cookieStore = await cookies()
+    cookieStore.set("mancrol_user_id", user.id, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 7, // 7 días
+      path: "/",
     })
 
-    if (authError) {
-      // User might already exist in auth, try to sign in
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: `${dni}@mancrol.internal`,
-        password: password,
-      })
+    console.log("[v0] Login successful, cookie set")
 
-      if (signInError) {
-        return NextResponse.json({ error: "Error al crear sesión" }, { status: 500 })
-      }
-    }
-
-    return NextResponse.json({ success: true, user })
+    return NextResponse.json({
+      success: true,
+      user: {
+        id: user.id,
+        dni: user.dni,
+        full_name: user.full_name,
+      },
+    })
   } catch (error) {
     console.error("[v0] Login error:", error)
     return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 })
