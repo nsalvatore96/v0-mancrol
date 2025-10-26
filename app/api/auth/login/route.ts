@@ -6,31 +6,19 @@ export async function POST(request: NextRequest) {
   try {
     const { dni, password } = await request.json()
 
-    console.log("[v0] Login attempt for DNI:", dni)
-
     if (!dni || !password) {
       return NextResponse.json({ error: "DNI y contraseña son requeridos" }, { status: 400 })
     }
 
     const supabase = await createClient()
 
-    const { data: user, error: userError } = await supabase.from("users").select("*").eq("dni", dni).single()
-
-    console.log("[v0] User query result:", { user: user ? "found" : "not found", error: userError })
-
-    if (user) {
-      console.log("[v0] User data:", { id: user.id, dni: user.dni, full_name: user.full_name })
-      console.log("[v0] Password hash from DB:", user.password_hash)
-    }
+    const { data: user, error: userError } = await supabase.from("users").select("*").eq("dni", dni).maybeSingle()
 
     if (userError || !user) {
-      console.log("[v0] User not found or error:", userError)
       return NextResponse.json({ error: "DNI o contraseña incorrectos" }, { status: 401 })
     }
 
     const passwordMatch = password === user.password_hash
-
-    console.log("[v0] Password match result:", passwordMatch)
 
     if (!passwordMatch) {
       return NextResponse.json({ error: "DNI o contraseña incorrectos" }, { status: 401 })
@@ -45,8 +33,6 @@ export async function POST(request: NextRequest) {
       path: "/",
     })
 
-    console.log("[v0] Login successful, cookie set")
-
     return NextResponse.json({
       success: true,
       user: {
@@ -56,7 +42,7 @@ export async function POST(request: NextRequest) {
       },
     })
   } catch (error) {
-    console.error("[v0] Login error:", error)
+    console.error("Login error:", error)
     return NextResponse.json({ error: "Error interno del servidor" }, { status: 500 })
   }
 }
