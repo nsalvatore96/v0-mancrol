@@ -8,7 +8,7 @@ DELETE FROM public.users;
 
 -- Insertar usuario administrador con contraseña "1234"
 INSERT INTO public.users (full_name, dni, password)
-VALUES ('Administrador', '39488736', '1234');
+VALUES ('Administrador', '0', '1234');
 
 -- Obtener el ID del usuario administrador
 DO $$
