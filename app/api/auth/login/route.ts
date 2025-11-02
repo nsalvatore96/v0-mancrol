@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "DNI o contraseña incorrectos" }, { status: 401 })
     }
 
-    const passwordMatch = password === user.password_hash
+    const passwordMatch = password === user.password
 
     if (!passwordMatch) {
       return NextResponse.json({ error: "DNI o contraseña incorrectos" }, { status: 401 })
