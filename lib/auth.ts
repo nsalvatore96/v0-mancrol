@@ -1,7 +1,6 @@
 "use server"
 
 import { createClient } from "@/lib/supabase/server"
-import bcrypt from "bcryptjs"
 import { cookies } from "next/headers"
 
 export interface User {
@@ -23,16 +22,14 @@ export async function loginWithDNI(dni: string, password: string) {
   const supabase = await createClient()
 
   // Get user by DNI
-  const { data: user, error: userError } = await supabase.from("users").select("*").eq("dni", dni).single()
+  const { data: user, error: userError } = await supabase.from("users").select("*").eq("dni", dni).maybeSingle()
 
   if (userError || !user) {
     return { error: "DNI o contraseña incorrectos" }
   }
 
   // Verify password
-  const passwordMatch = await bcrypt.compare(password, user.password_hash)
-
-  if (!passwordMatch) {
+  if (password !== user.password) {
     return { error: "DNI o contraseña incorrectos" }
   }
 
@@ -54,9 +51,9 @@ export async function getCurrentUser(): Promise<User | null> {
     }
 
     const supabase = await createClient()
-    const { data: user } = await supabase.from("users").select("*").eq("id", userId).single()
+    const { data: user } = await supabase.from("users").select("*").eq("id", userId).maybeSingle()
 
-    return user
+    return user || null
   } catch (error) {
     console.error("[v0] Error getting current user:", error)
     return null
