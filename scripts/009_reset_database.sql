@@ -1,16 +1,33 @@
--- ============================================================
---  Script: 009_reset_database.sql
---  Objetivo: Limpiar completamente la base y crear un usuario admin inicial
--- ============================================================
+-- 009_reset_database.sql (versión completa)
 
--- 1. Eliminar datos existentes
+-- 1) Limpiar tablas
 TRUNCATE TABLE public.audit_logs RESTART IDENTITY CASCADE;
 TRUNCATE TABLE public.user_permissions RESTART IDENTITY CASCADE;
 TRUNCATE TABLE public.users RESTART IDENTITY CASCADE;
 
--- 2. Crear usuario administrador inicial
-INSERT INTO public.users (full_name, dni, password_hash)
-VALUES ('Administrador', '39488736', '1234');
+-- 2) Crear admin
+-- OJO: usá acá el hash real de "1234"
+INSERT INTO public.users (dni, password_hash, full_name)
+VALUES (
+  '39488736',
+  '$2b$10$rQVXKqVXKqVXKqVXKqVXKOeP8h5qVXKqVXKqVXKqVXKqVXKqVXKqW', -- reemplazar por hash real de 1234
+  'Administrador'
+)
+ON CONFLICT (dni) DO NOTHING;
 
--- 3. Confirmar
-SELECT * FROM public.users;
+-- 3) Asignar permisos al admin
+DO $$
+DECLARE
+  admin_id UUID;
+BEGIN
+  SELECT id INTO admin_id FROM public.users WHERE dni = '39488736';
+
+  IF admin_id IS NOT NULL THEN
+    INSERT INTO public.user_permissions (user_id, permission_slug, enabled)
+    VALUES 
+      (admin_id, 'modificar_usuarios', TRUE),
+      (admin_id, 'gestionar_rutas', TRUE)
+    ON CONFLICT (user_id, permission_slug) DO UPDATE
+    SET enabled = TRUE;
+  END IF;
+END $$;
