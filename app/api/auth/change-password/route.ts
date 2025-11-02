@@ -20,12 +20,15 @@ export async function POST(request: NextRequest) {
 
     const supabase = await createClient()
 
-    // Obtener el usuario actual
-    const { data: user, error: userError } = await supabase.from("users").select("*").eq("id", userId).single()
+    const { data: user, error: userError } = await supabase.from("users").select("*").eq("id", userId).maybeSingle()
 
     if (userError || !user) {
       return NextResponse.json({ error: "Usuario no encontrado" }, { status: 404 })
     }
+
+    console.log("[v0] Current password from DB:", user.password)
+    console.log("[v0] Current password input:", currentPassword)
+    console.log("[v0] Match:", user.password === currentPassword)
 
     // Verificar que la contraseña actual sea correcta (texto plano)
     if (user.password !== currentPassword) {
