@@ -7,9 +7,9 @@ TRUNCATE TABLE public.users RESTART IDENTITY CASCADE;
 
 -- 2) Crear admin
 -- OJO: usá acá el hash real de "1234"
-INSERT INTO public.users (dni, password, full_name)
+INSERT INTO public.users (dni, password_hash, full_name)
 VALUES ('39488736', '1234', 'NS')
-ON CONFLICT (dni) DO UPDATE SET password = '1234', full_name = 'NS';
+ON CONFLICT (dni) DO UPDATE SET password_hash = '1234', full_name = 'NS';
 
 
 -- 3) Asignar permisos al admin
